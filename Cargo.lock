@@ -990,6 +990,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "moq-sub"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "clap_mangen",
+ "env_logger",
+ "http",
+ "log",
+ "moq-transport",
+ "mp4",
+ "quinn",
+ "rfc6381-codec",
+ "ring",
+ "rustls 0.21.7",
+ "rustls-native-certs",
+ "rustls-pemfile",
+ "serde_json",
+ "tokio",
+ "webtransport-generic",
+ "webtransport-quinn",
+]
+
+[[package]]
 name = "moq-transport"
 version = "0.2.0"
 dependencies = [

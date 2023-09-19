@@ -11,13 +11,13 @@ HOST="${HOST:-localhost:4443}"
 NAME="${NAME:-$(head /dev/urandom | LC_ALL=C tr -dc 'a-zA-Z0-9' | head -c 16)}"
 
 # Combine the host and name into a URI.
-URI="${URI:-"moq://$HOST/$NAME"}"
+URI="${URI:-"moq://192.168.4.1:4443/demo"}"
 
 # Default to a source video
 MEDIA="${MEDIA:-dev/source.mp4}"
 
 # Run ffmpeg and pipe the output to moq-pub
-ffmpeg -hide_banner -v quiet \
+ffmpeg -hide_banner -v info \
 	-stream_loop -1 -re \
 	-i "$MEDIA" \
 	-an \
