@@ -17,7 +17,7 @@ use moq_transport::model::broadcast::{self, Subscriber};
 async fn main() -> Result<()> {
 	// Create a Config object with the desired server URI and port
 	let bind_address = "[::]:0".parse().unwrap();
-	let uri = "https://192.168.4.1:4443/demo".parse().unwrap();
+	let uri = "https://192.168.8.2:4443/demo".parse().unwrap();
 
 	let (publisher, subscriber) = broadcast::new();
 	let mut media = Media::new(subscriber).await?;

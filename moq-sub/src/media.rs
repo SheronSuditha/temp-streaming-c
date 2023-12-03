@@ -1,13 +1,9 @@
-use std::io::Cursor;
-
-use crate::media;
 use anyhow::{self, Context, Ok};
 use moq_transport::model::{broadcast, segment, track};
-use moq_transport::VarInt;
 use mp4::{self, ReadBox};
-use segment::Subscriber;
-use std::result::Result;
 use tokio::io::AsyncReadExt;
+use csv::Writer;
+use std::{time::{SystemTime, UNIX_EPOCH}, fs::OpenOptions};
 
 pub struct Media {
 	_subscriber: broadcast::Subscriber,
@@ -93,13 +89,68 @@ impl Media {
 	}
 }
 
+// async fn run_segment(segment: &mut segment::Subscriber) -> anyhow::Result<()> {
+// 	while let Some(chunk) = read_atom(segment).await? {
+// 		log::info!("chunk: {:?}", chunk.len());
+// 		println!("{:?}", chunk.len());
+// 	}
+// 	Ok(())
+// }
+
 async fn run_segment(segment: &mut segment::Subscriber) -> anyhow::Result<()> {
+	let mut total_data_size: u64 = 0; // To track the total data size in the segment.
+	let mut start_time = std::time::Instant::now();
+
+	let mut file = OpenOptions::new().write(true).append(true).open("client3.csv")?;
+
+	let mut csv_writer = Writer::from_writer(file);
+
+	// Write CSV header
+	// csv_writer.write_record(&["Timestamp", "Chunk Size (bytes)", "Bitrate (Mbps)"])?;
+
 	while let Some(chunk) = read_atom(segment).await? {
-		log::info!("chunk: {:?}", chunk.len());
-		println!("{:?}", chunk.len());
+		let now = SystemTime::now();
+		let since_the_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+
+		// Convert to seconds (as f64)
+		let seconds = since_the_epoch.as_secs() as f64;
+		// Convert to nanoseconds (as f64) and divide by 1e9 to get fractional seconds
+		let nanoseconds = since_the_epoch.subsec_nanos() as f64 / 1e9;
+		// Combine seconds and nanoseconds to get the complete timestamp
+		let timestamp = seconds + nanoseconds;
+
+		let chunk_size = chunk.len() as u64;
+		total_data_size += chunk_size;
+
+		let elapsed_time = start_time.elapsed().as_secs_f64();
+		if elapsed_time > 0.0 {
+			let bitrate = (total_data_size * 8) as f64 / (elapsed_time * 1_000_000.0); // Calculate bitrate in Mbps.
+
+			// Write data to the CSV file
+			csv_writer.write_record(&[timestamp.to_string(), chunk_size.to_string(), format!("{:.2}", bitrate)])?;
+			csv_writer.flush()?;
+
+			log::info!(
+				"Timestamp: {}, Chunk size: {} bytes, Bitrate: {:.2} Mbps",
+				timestamp.to_string(),
+				chunk_size,
+				bitrate
+			);
+			println!(
+				"Timestamp: {}, Chunk size: {} bytes, Bitrate: {:.2} Mbps",
+				timestamp.to_string(),
+				chunk_size,
+				bitrate
+			);
+		} else {
+			log::info!("Chunk size: {} bytes", chunk_size);
+			println!("Chunk size: {} bytes", chunk_size);
+		}
 	}
+
 	Ok(())
 }
+
 
 // Read a full MP4 atom into a vector.
 async fn read_atom<R: AsyncReadExt + Unpin>(reader: &mut R) -> anyhow::Result<Option<Vec<u8>>> {
